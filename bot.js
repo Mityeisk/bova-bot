@@ -3,7 +3,7 @@ import { Bot } from "grammy";
 import axios from "axios";
 import {
   getExternalID,
-  handlePdfError,
+  handleDocumentError,
   mediaGroupCache,
   mediaGroupTimers,
 } from "./requests.js";
@@ -96,38 +96,6 @@ bot.command("details", async (ctx) => {
   }
 });
 
-bot.command("kill", async (ctx) => {
-  const recievedChatId = ctx.chat.id;
-
-  if (recievedChatId.toString() !== senderChatId) {
-    return; // Игнорируем сообщения из других чатов
-  }
-
-  const userId = ctx.from.id;
-
-  try {
-    // Получаем информацию о правах пользователя
-    const chatMember = await ctx.getChatMember(userId);
-
-    // Проверяем, является ли пользователь администратором или создателем
-    if (
-      chatMember.status === "administrator" ||
-      chatMember.status === "creator"
-    ) {
-      // Если администратор, то останавливаем сервер
-      await ctx.reply("Бот остановлен.");
-      console.log("Бот остановлен администратором");
-      process.exit(0); // Завершение процесса
-    } else {
-      // Если не администратор, отправляем сообщение об ошибцке!
-      await ctx.reply("У вас нет прав для выполнения этой команды.");
-    }
-  } catch (error) {
-    console.error("Ошибка получения информации о пользователе:", error);
-    await ctx.reply("Произошла ошибка при проверке ваших прав.");
-  }
-});
-
 bot.on("message", async (ctx) => {
   const recievedChatId = ctx.chat.id;
 
@@ -192,8 +160,13 @@ bot.on("message", async (ctx) => {
       mediaGroupCache[groupId] = [];
     }
 
-    if (message.document && message.document.mime_type === "application/pdf") {
-      await handlePdfError(ctx, groupId);
+    if (
+      message.document &&
+      (message.document.mime_type === "application/pdf" ||
+        message.document.mime_type === "image/jpeg" ||
+        message.document.mime_type === "image/png")
+    ) {
+      await handleDocumentError(ctx, groupId);
       return;
     }
 
