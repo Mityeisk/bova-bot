@@ -23,7 +23,7 @@ export async function getExternalID(orderId, ctx) {
   return externalId;
 }
 
-export async function handlePdfError(ctx, groupId) {
+export async function handlePdfPngError(ctx, groupId) {
   const userMessageId = ctx.message.message_id;
   const reply = {
     reply_to_message_id: userMessageId, // Указываем ID сообщения, на которое нужно ответить
@@ -35,15 +35,12 @@ export async function handlePdfError(ctx, groupId) {
   pdfErrorTimers[groupId] = setTimeout(async () => {
     if (mediaGroupCache[groupId]) {
       await ctx.reply(
-        "❗️PDF-файлы не обрабатываются. Отправьте чек в виде изображения.",
+        "❗️PDF и PNG файлы не обрабатываются. Отправьте чек в виде изображения.",
         reply
       );
       delete mediaGroupCache[groupId];
-      console.log(mediaGroupCache);
       delete mediaGroupTimers[groupId];
-      console.log(mediaGroupTimers);
       delete pdfErrorTimers[groupId];
-      console.log(pdfErrorTimers);
     }
   }, 3000); // Таймер в 1000 мс для ожидания загрузки всех PDF-файлов
 }

@@ -3,7 +3,7 @@ import { Bot } from "grammy";
 import axios from "axios";
 import {
   getExternalID,
-  handlePdfError,
+  handlePdfPngError,
   mediaGroupCache,
   mediaGroupTimers,
 } from "./requests.js";
@@ -128,6 +128,43 @@ bot.command("kill", async (ctx) => {
   }
 });
 
+const APPROVED_MESSAGE = "✅ Первичный спор одобрен. Платёж зачислен";
+const DECLINED_MESSAGE_AGAIN = "❌ Повторный спор отклонён.";
+const DECLINED_MESSAGE_FIRST = "❌ Первичный спор отклонён.";
+
+bot.on("edit", async (ctx) => {
+  console.log(ctx);
+  console.log(ctx.update.edited_channel_post.caption);
+  const editedMessage = ctx.editedChannelPost;
+  // Проверяем, что сообщение отредактировано в нужном канале
+  if (
+    editedMessage.chat.id == destinationChatId &&
+    ctx.update.edited_channel_post.caption
+  ) {
+    const messageText =
+      editedMessage.text || ctx.update.edited_channel_post.caption;
+
+    // Проверяем, содержит ли сообщение одну из нужных фраз
+    if (
+      messageText.includes(APPROVED_MESSAGE) ||
+      messageText.includes(DECLINED_MESSAGE_FIRST) ||
+      messageText.includes(DECLINED_MESSAGE_AGAIN)
+    ) {
+      // Убираем "-100" из CHANNEL_ID, чтобы использовать для ссылки
+      const positiveChannelId = String(destinationChatId).replace("-100", ""); // Превращаем в положительное число
+
+      // Формируем ссылку на сообщение
+      const messageLink = `https://t.me/c/${positiveChannelId}/${editedMessage.message_id}`;
+
+      // Формируем текст уведомления
+      const notificationText = `${messageText}\n\nСсылка на сообщение: ${messageLink}`;
+
+      // Отправляем уведомление (можно отправить в другой чат или администратору)
+      await ctx.api.sendMessage(senderChatId, notificationText);
+    }
+  }
+});
+
 bot.on("message", async (ctx) => {
   const recievedChatId = ctx.chat.id;
 
@@ -136,7 +173,6 @@ bot.on("message", async (ctx) => {
   }
 
   let messageToSend = "";
-  let externalIdToSend = "";
 
   const message = ctx.message;
 
@@ -171,8 +207,6 @@ bot.on("message", async (ctx) => {
 
     try {
       externalID = await getExternalID(order, ctx);
-      console.log(externalID);
-
       messageToSend = `${externalID}\n${messageText}`;
     } catch (error) {
       console.log(error);
@@ -191,19 +225,23 @@ bot.on("message", async (ctx) => {
     if (!mediaGroupCache[groupId]) {
       mediaGroupCache[groupId] = [];
     }
-
-    if (message.document && message.document.mime_type === "application/pdf") {
-      await handlePdfError(ctx, groupId);
+    //message.document.mime_type === "application/pdf" ||
+    if (
+      message.document &&
+      (message.document.mime_type === "image/png" ||
+        message.document.mime_type === "image/png" ||
+        message.document.mime_type === "image/jpeg")
+    ) {
+      await handlePdfPngError(ctx, groupId);
       return;
     }
-
-    // Сохраняем фото в кеш
+    console.log("123");
+    // Сохраняем фото в кешq
     mediaGroupCache[groupId].push({
       type: "photo",
       media: message.photo[message.photo.length - 1].file_id, // Самое большое фото
       caption: messageToSend || "", // Только одно сообщение может содержать подпись
     });
-    console.log(mediaGroupCache[groupId][0].caption);
 
     // Сбрасываем предыдущий таймер, если он был
     if (mediaGroupTimers[groupId]) {
