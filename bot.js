@@ -19,7 +19,7 @@ let externalID = "";
 bot.api.setMyCommands(
   [
     { command: "details", description: "Запрос реквизитов" },
-    { command: "message", description: "Отправить произвольное сообщение" },
+    // { command: "message", description: "Отправить произвольное сообщение" },
   ],
   {
     scope: {
