@@ -35,7 +35,7 @@ export async function handleDocumentError(ctx, groupId) {
   pdfErrorTimers[groupId] = setTimeout(async () => {
     if (mediaGroupCache[groupId]) {
       await ctx.reply(
-        "❗️PDF-файлы и изображения без сжатия не обрабатываются. Отправьте чек в виде изображения.",
+        "❗️Более одного PDF или не сжатого файла не отправляем в одном сообщении по просьбе платежной системы.",
         reply
       );
       delete mediaGroupCache[groupId];

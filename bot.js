@@ -107,7 +107,7 @@ bot.on("message", async (ctx) => {
   let externalIdToSend = "";
 
   const message = ctx.message;
-
+  // console.log(message);
   const reply = {
     reply_to_message_id: message.message_id, // Указываем ID сообщения, на которое нужно ответить
   };
@@ -120,6 +120,9 @@ bot.on("message", async (ctx) => {
     return; // Выходим из функции, не реагируя на такие сообщения
   }
   const messageText = message.text || message.caption;
+  // console.log(message);
+  // console.log("|||||||||||||||||||||||||||||||||||||||||||||||||||");
+
   if (messageText) {
     const parts = messageText.split(" ");
     let order = "";
@@ -151,25 +154,20 @@ bot.on("message", async (ctx) => {
       return;
     }
   } // Проверяем, является ли сообщение частью альбома (media group)
+  const groupId = message.media_group_id;
 
-  if (message.media_group_id || message.document) {
-    const groupId = message.media_group_id;
+  if (!mediaGroupCache[groupId]) {
+    mediaGroupCache[groupId] = [];
+  }
 
+  if (message.media_group_id && message.document) {
+    await handleDocumentError(ctx, groupId);
+    return;
+  }
+  // console.log(message.media_group_id);
+  // console.log(message.photo);
+  if (message.media_group_id) {
     // Если это часть альбома, добавляем сообщение в кеш
-    if (!mediaGroupCache[groupId]) {
-      mediaGroupCache[groupId] = [];
-    }
-
-    if (
-      message.document &&
-      (message.document.mime_type === "application/pdf" ||
-        message.document.mime_type === "image/jpeg" ||
-        message.document.mime_type === "image/png")
-    ) {
-      await handleDocumentError(ctx, groupId);
-      return;
-    }
-
     // Сохраняем фото в кеш
     mediaGroupCache[groupId].push({
       type: "photo",
@@ -220,6 +218,28 @@ bot.on("message", async (ctx) => {
       {
         type: "photo",
         media: message.photo[message.photo.length - 1].file_id, // Берем последнее фото (наибольший размер)
+        caption: messageToSend,
+      },
+    ];
+    try {
+      await ctx.api.sendMediaGroup(destinationChatId, media);
+      await ctx.reply(`🟢Запрос отправлен.\nBova ID: \`${externalID}\``, {
+        ...reply,
+        parse_mode: "Markdown",
+      });
+    } catch (error) {
+      console.error("Ошибка при отправке фото:", error);
+      await ctx.reply(
+        "Произошла ошибка при пересылке. Пожалуйста, попробуйте снова.",
+        reply
+      );
+      return;
+    }
+  } else if (message.document && message.caption) {
+    const media = [
+      {
+        type: "document",
+        media: message.document.file_id, // Берем последнее фото (наибольший размер)
         caption: messageToSend,
       },
     ];
