@@ -107,7 +107,6 @@ bot.on("message", async (ctx) => {
   let externalIdToSend = "";
 
   const message = ctx.message;
-  // console.log(message);
   const reply = {
     reply_to_message_id: message.message_id, // Указываем ID сообщения, на которое нужно ответить
   };
@@ -120,8 +119,6 @@ bot.on("message", async (ctx) => {
     return; // Выходим из функции, не реагируя на такие сообщения
   }
   const messageText = message.text || message.caption;
-  // console.log(message);
-  // console.log("|||||||||||||||||||||||||||||||||||||||||||||||||||");
 
   if (messageText) {
     const parts = messageText.split(" ");
@@ -130,7 +127,6 @@ bot.on("message", async (ctx) => {
     if (parts[0]) {
       order = parts[0].split("\n")[0];
     }
-    console.log(order);
     if (isNaN(order)) {
       // Неправильный формат запросаы
       await ctx.reply(
@@ -142,7 +138,6 @@ bot.on("message", async (ctx) => {
 
     try {
       externalID = await getExternalID(order, ctx);
-      console.log(externalID);
 
       messageToSend = `${externalID}\n${messageText}`;
     } catch (error) {
@@ -164,8 +159,6 @@ bot.on("message", async (ctx) => {
     await handleDocumentError(ctx, groupId);
     return;
   }
-  // console.log(message.media_group_id);
-  // console.log(message.photo);
   if (message.media_group_id) {
     // Если это часть альбома, добавляем сообщение в кеш
     // Сохраняем фото в кеш
