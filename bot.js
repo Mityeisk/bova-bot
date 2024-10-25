@@ -61,8 +61,10 @@ bot.command("details", async (ctx) => {
   const orderID = parts[1];
   const formattedParts = parts.slice(1);
   async function getOrdersDetails(formattedParts) {
+    const cleanedParts = formattedParts.map((part) => part.replace(/\n/g, ""));
+    console.log(cleanedParts);
     const responseObject = [];
-    for (const order of formattedParts) {
+    for (const order of cleanedParts) {
       try {
         const response = await axios.get(
           "https://api-crm.bovapay.com/tables/get_id/590",
