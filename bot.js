@@ -45,8 +45,7 @@ bot.command("details", async (ctx) => {
 
   const messageText = ctx.message.text;
   const parts = messageText.split(" ");
-  if (parts.length !== 2 || !/^\d{14}$/.test(parts[1])) {
-    // Неправильный формат запроса
+  if (parts.length <= 1) {
     try {
       await ctx.reply(
         '❗️Неправильный запрос. Формат: "/details <ордер>".',
@@ -60,43 +59,47 @@ bot.command("details", async (ctx) => {
   }
 
   const orderID = parts[1];
+  const formattedParts = parts.slice(1);
+  async function getOrdersDetails(formattedParts) {
+    const responseObject = [];
+    for (const order of formattedParts) {
+      try {
+        const response = await axios.get(
+          "https://api-crm.bovapay.com/tables/get_id/590",
+          {
+            params: {
+              direction: "m2b",
+              id: order,
+            },
+          }
+        );
 
-  try {
-    const response = await axios.get(
-      "https://api-crm.bovapay.com/tables/get_id/590",
-      {
-        params: {
-          direction: "m2b",
-          id: orderID, // Отправляем ID в теле запроса
-        },
+        const responseHtml = cheerio.load(response.data, {
+          decodeEntities: false,
+        });
+        const externalId = responseHtml(".result h2").text();
+        const requsit = responseHtml(".result tr:nth-child(2) td.pl").text();
+        const bank = responseHtml(".result tr:nth-child(3) td.pl").text();
+        const sum = responseHtml(".result tr:nth-child(4) td.pl").text();
+
+        const object = `🟢Ордер: \`${order}\`\nBova ID: \`${externalId}\`\nПолучатель: \`${requsit}\`\nБанк: \`${bank}\`\nСумма: \`${sum}\`\n`;
+        responseObject.push(object);
+      } catch {
+        const errObject = `❗️Ордер: \`${order}\`\nОрдер некорректный или произошел сбой.\n`;
+        responseObject.push(errObject);
       }
-    );
+    }
 
-    // Парсинг HTML
-    const responseHtml = cheerio.load(response.data, { decodeEntities: false });
-
-    // Извлечение значения h2 внутри div с классом "result"
-
-    const externalId = responseHtml(".result h2").text();
-    const requsit = responseHtml(".result tr:nth-child(2) td.pl").text();
-    const bank = responseHtml(".result tr:nth-child(3) td.pl").text();
-    const sum = responseHtml(".result tr:nth-child(4) td.pl").text();
-    ctx.reply(
-      `Реквизиты👀\nОрдер: \`${orderID}\`\nBova ID: \`${externalId}\`\nПолучатель: \`${requsit}\`\nБанк: \`${bank}\`\nСумма: \`${sum}\`
-      `,
-
-      {
-        parse_mode: "Markdown",
-        ...reply,
-      }
-    );
-  } catch (error) {
-    ctx.reply(
-      "❗️Ошибка при выполнении запроса: данный айди не существует или произошел сбой.",
-      reply
-    );
-    return;
+    return responseObject;
   }
+
+  const details = await getOrdersDetails(formattedParts);
+  const detailsString = details.join("\n");
+
+  ctx.reply(detailsString, {
+    parse_mode: "Markdown",
+    ...reply,
+  });
 });
 
 bot.command("message", async (ctx) => {
