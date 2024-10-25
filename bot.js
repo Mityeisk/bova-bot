@@ -44,7 +44,8 @@ bot.command("details", async (ctx) => {
   };
 
   const messageText = ctx.message.text;
-  const parts = messageText.split(" ");
+  console.log(messageText);
+  const parts = messageText.split(/\s+/);
   if (parts.length <= 1) {
     try {
       await ctx.reply(
@@ -57,12 +58,13 @@ bot.command("details", async (ctx) => {
       return;
     }
   }
+  console.log(parts);
 
-  const orderID = parts[1];
   const formattedParts = parts.slice(1);
   async function getOrdersDetails(formattedParts) {
+    // console.log(formattedParts);
     const cleanedParts = formattedParts.map((part) => part.replace(/\n/g, ""));
-    console.log(cleanedParts);
+    //console.log(cleanedParts);
     const responseObject = [];
     for (const order of cleanedParts) {
       try {
