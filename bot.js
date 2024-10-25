@@ -89,7 +89,7 @@ bot.command("details", async (ctx) => {
         const object = `🟢Ордер: \`${order}\`\nBova ID: \`${externalId}\`\nПолучатель: \`${requsit}\`\nБанк: \`${bank}\`\nСумма: \`${sum}\`\n`;
         responseObject.push(object);
       } catch {
-        const errObject = `❗️Ордер: \`${order}\`\nОрдер некорректный или произошел сбой.\n`;
+        const errObject = `❗️Ордер: \`${order}\`\nРеквизиты не выдавались или произошел сбой.\n`;
         responseObject.push(errObject);
       }
     }
