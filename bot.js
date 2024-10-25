@@ -113,8 +113,6 @@ bot.command("message", async (ctx) => {
     return; // Игнорируем сообщения из других чатов
   }
 
-  let messageToSend = "";
-
   const message = ctx.message;
   const reply = {
     reply_to_message_id: message.message_id, // Указываем ID сообщения, на которое нужно ответить
@@ -134,6 +132,7 @@ bot.command("message", async (ctx) => {
 
   try {
     await bot.api.sendMessage(destinationChatId, text);
+    await ctx.reply("🟢Сообщение отправлено.", reply);
   } catch (err) {
     console.error("Ошибка при отправке фото:", error);
     await ctx.reply(
