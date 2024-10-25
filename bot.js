@@ -18,8 +18,11 @@ let externalID = "";
 
 bot.api.setMyCommands(
   [
-    { command: "details", description: "Запрос реквизитов" },
-    // { command: "message", description: "Отправить произвольное сообщение" },
+    { command: "details", description: "Request payment details" },
+    {
+      command: "message",
+      description: "Send any message. Command will not handle img/pdf.",
+    },
   ],
   {
     scope: {
@@ -90,6 +93,44 @@ bot.command("details", async (ctx) => {
   } catch (error) {
     ctx.reply(
       "❗️Ошибка при выполнении запроса: данный айди не существует или произошел сбой.",
+      reply
+    );
+    return;
+  }
+});
+
+bot.command("message", async (ctx) => {
+  console.log(123123);
+  const recievedChatId = ctx.chat.id;
+  if (recievedChatId.toString() !== senderChatId) {
+    return; // Игнорируем сообщения из других чатов
+  }
+
+  let messageToSend = "";
+
+  const message = ctx.message;
+  const reply = {
+    reply_to_message_id: message.message_id, // Указываем ID сообщения, на которое нужно ответить
+  };
+
+  const messageText = message.text || message.caption;
+  const parts = messageText.split(" ");
+  if (parts.length <= 1) {
+    await ctx.reply(
+      '❗️Неправильный запрос. Формат: "/message <text>".',
+      reply
+    );
+    return;
+  }
+  const botCommand = parts[0];
+  const text = messageText.replace(botCommand, "");
+
+  try {
+    await bot.api.sendMessage(destinationChatId, text);
+  } catch (err) {
+    console.error("Ошибка при отправке фото:", error);
+    await ctx.reply(
+      "Произошла ошибка при пересылке. Пожалуйста, попробуйте снова.",
       reply
     );
     return;
