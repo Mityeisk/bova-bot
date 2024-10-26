@@ -14,7 +14,9 @@ export const bot = new Bot(process.env.BOT_API_KEY);
 const senderChatId = process.env.SENDER_CHAT_ID;
 const destinationChatId = process.env.DESTINATION_CHAT_ID;
 
+let orderData = "";
 let externalID = "";
+let requisit = "";
 
 bot.api.setMyCommands(
   [
@@ -170,6 +172,7 @@ bot.on("message", async (ctx) => {
   if (messageText) {
     const parts = messageText.split(" ");
     let order = "";
+    let externalIDtosend = "";
 
     if (parts[0]) {
       order = parts[0].split("\n")[0];
@@ -184,8 +187,10 @@ bot.on("message", async (ctx) => {
     }
 
     try {
-      externalID = await getExternalID(order, ctx);
-
+      orderData = await getExternalID(order, ctx);
+      externalID = orderData.externalId;
+      requisit = orderData.requsit;
+      console.log(requisit);
       messageToSend = `${externalID}\n${messageText}`;
     } catch (error) {
       console.log(error);
@@ -229,10 +234,8 @@ bot.on("message", async (ctx) => {
             destinationChatId,
             mediaGroupCache[groupId]
           );
-          const externalIDtosend = externalID;
-          externalID = "";
           await ctx.reply(
-            `🟢Запрос отправлен.\nBova ID: \`${externalIDtosend}\``,
+            `🟢Запрос отправлен.\nBova ID: \`${externalID}\`\nРеквизиты: \`${requisit}\``,
             {
               ...reply,
               parse_mode: "Markdown",
@@ -263,10 +266,13 @@ bot.on("message", async (ctx) => {
     ];
     try {
       await ctx.api.sendMediaGroup(destinationChatId, media);
-      await ctx.reply(`🟢Запрос отправлен.\nBova ID: \`${externalID}\``, {
-        ...reply,
-        parse_mode: "Markdown",
-      });
+      await ctx.reply(
+        `🟢Запрос отправлен.\nBova ID: \`${externalID}\`\nРеквизиты: \`${requisit}\``,
+        {
+          ...reply,
+          parse_mode: "Markdown",
+        }
+      );
     } catch (error) {
       console.error("Ошибка при отправке фото:", error);
       await ctx.reply(
@@ -285,10 +291,13 @@ bot.on("message", async (ctx) => {
     ];
     try {
       await ctx.api.sendMediaGroup(destinationChatId, media);
-      await ctx.reply(`🟢Запрос отправлен.\nBova ID: \`${externalID}\``, {
-        ...reply,
-        parse_mode: "Markdown",
-      });
+      await ctx.reply(
+        `🟢Запрос отправлен.\nBova ID: \`${externalID}\`\nРеквизиты: \`${requisit}\``,
+        {
+          ...reply,
+          parse_mode: "Markdown",
+        }
+      );
     } catch (error) {
       console.error("Ошибка при отправке фото:", error);
       await ctx.reply(

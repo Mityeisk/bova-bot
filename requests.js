@@ -14,13 +14,16 @@ export async function getExternalID(orderId, ctx) {
       id: orderId, // Отправляем ID в теле запроса
     },
   });
-
-  // Парсинг HTML
-  const responseHtml = cheerio.load(response.data);
+  const responseHtml = cheerio.load(response.data, {
+    decodeEntities: false,
+  });
 
   // Извлечение значения h2 внутри div с классом "result"
   const externalId = responseHtml(".result h2").text();
-  return externalId;
+  const requsit = responseHtml(".result tr:nth-child(2) td.pl").text();
+  const responseData = { externalId, requsit };
+  // console.log(responseData);
+  return responseData;
 }
 
 export async function handleDocumentError(ctx, groupId) {
