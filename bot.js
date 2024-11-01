@@ -13,7 +13,7 @@ dotenv.config();
 export const bot = new Bot(process.env.BOT_API_KEY);
 const senderChatId = process.env.SENDER_CHAT_ID;
 const destinationChatId = process.env.DESTINATION_CHAT_ID;
-
+const requestUrl = process.env.REQUEST_URL;
 let orderData = "";
 let externalID = "";
 let requisit = "";
@@ -46,7 +46,6 @@ bot.command("details", async (ctx) => {
   };
 
   const messageText = ctx.message.text;
-  console.log(messageText);
   const parts = messageText.split(/\s+/);
   if (parts.length <= 1) {
     try {
@@ -60,41 +59,44 @@ bot.command("details", async (ctx) => {
       return;
     }
   }
-  console.log(parts);
 
   const formattedParts = parts.slice(1);
   async function getOrdersDetails(formattedParts) {
-    // console.log(formattedParts);
+    // Удаляем символы новой строки из каждого элемента массива
     const cleanedParts = formattedParts.map((part) => part.replace(/\n/g, ""));
-    //console.log(cleanedParts);
     const responseObject = [];
-    for (const order of cleanedParts) {
-      try {
-        const response = await axios.get(
-          "https://api-crm.bovapay.com/tables/get_id/590",
-          {
-            params: {
-              direction: "m2b",
-              id: order,
-            },
-          }
-        );
 
-        const responseHtml = cheerio.load(response.data, {
-          decodeEntities: false,
-        });
-        const externalId = responseHtml(".result h2").text();
-        const requsit = responseHtml(".result tr:nth-child(2) td.pl").text();
-        const bank = responseHtml(".result tr:nth-child(3) td.pl").text();
-        const sum = responseHtml(".result tr:nth-child(4) td.pl").text();
+    // Массив промисов для всех запросов
+    const requests = cleanedParts.map((order) =>
+      axios
+        .get(requestUrl, {
+          params: {
+            direction: "m2b",
+            id: order,
+          },
+        })
+        .then((response) => {
+          const responseHtml = cheerio.load(response.data, {
+            decodeEntities: false,
+          });
+          const externalId = responseHtml(".result h2").text();
+          const requsit = responseHtml(".result tr:nth-child(2) td.pl").text();
+          const bank = responseHtml(".result tr:nth-child(3) td.pl").text();
+          const sum = responseHtml(".result tr:nth-child(4) td.pl").text();
 
-        const object = `🟢Ордер: \`${order}\`\nBova ID: \`${externalId}\`\nПолучатель: \`${requsit}\`\nБанк: \`${bank}\`\nСумма: \`${sum}\`\n`;
-        responseObject.push(object);
-      } catch {
-        const errObject = `❗️Ордер: \`${order}\`\nРеквизиты не выдавались или произошел сбой.\n`;
-        responseObject.push(errObject);
-      }
-    }
+          // Формируем объект с данными и добавляем в массив
+          const object = `🟢Ордер: \`${order}\`\nBova ID: \`${externalId}\`\nПолучатель: \`${requsit}\`\nБанк: \`${bank}\`\nСумма: \`${sum}\`\n`;
+          responseObject.push(object);
+        })
+        .catch(() => {
+          // Если произошла ошибка, добавляем ошибочный объект в массив
+          const errObject = `❗️Ордер: \`${order}\`\nРеквизиты не выдавались или произошел сбой.\n`;
+          responseObject.push(errObject);
+        })
+    );
+
+    // Ждём завершения всех запросов
+    await Promise.allSettled(requests);
 
     return responseObject;
   }
@@ -109,7 +111,6 @@ bot.command("details", async (ctx) => {
 });
 
 bot.command("message", async (ctx) => {
-  console.log(123123);
   const recievedChatId = ctx.chat.id;
   if (recievedChatId.toString() !== senderChatId) {
     return; // Игнорируем сообщения из других чатов
@@ -190,7 +191,6 @@ bot.on("message", async (ctx) => {
       orderData = await getExternalID(order, ctx);
       externalID = orderData.externalId;
       requisit = orderData.requsit;
-      console.log(requisit);
       messageToSend = `${externalID}\n${messageText}`;
     } catch (error) {
       console.log(error);
@@ -219,7 +219,6 @@ bot.on("message", async (ctx) => {
       media: message.photo[message.photo.length - 1].file_id, // Самое большое фото
       caption: messageToSend || "", // Только одно сообщение может содержать подпись
     });
-    console.log(mediaGroupCache[groupId][0].caption);
 
     // Сбрасываем предыдущий таймер, если он был
     if (mediaGroupTimers[groupId]) {

@@ -22,7 +22,6 @@ export async function getExternalID(orderId, ctx) {
   const externalId = responseHtml(".result h2").text();
   const requsit = responseHtml(".result tr:nth-child(2) td.pl").text();
   const responseData = { externalId, requsit };
-  // console.log(responseData);
   return responseData;
 }
 
